@@ -2,156 +2,296 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Load Test Analysis Dashboard</title>
+  <title>K6 Load Test: <%= title %></title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- Google Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.2/css/all.css" crossorigin="anonymous" />
   <style>
-    body {
-      font-family: "Roboto", sans-serif;
-      background: linear-gradient(135deg, #f5f6fc 0%, #ffffff 100%);
-      margin: 0;
-      padding: 20px;
-      color: #333;
+    /* Base Reset */
+    body, html {
+      margin: 0; padding: 0; height: 100%;
+      font-family: 'Roboto', sans-serif;
+      background: #f4f6fa;
+      color: #222;
+      display: flex;
+      height: 100vh;
+      transition: background 0.3s, color 0.3s;
     }
+    body.dark { background: #121212; color: #eee; }
 
-    h1 {
-      text-align: center;
-      margin-bottom: 30px;
-      font-size: 2rem;
-      font-weight: 700;
-      color: #2c3e50;
+    /* Sidebar */
+    nav.sidebar {
+      width: 240px;
+      background: linear-gradient(180deg, #3f51b5, #1a237e);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      box-sizing: border-box;
+      box-shadow: 2px 0 12px rgba(0,0,0,0.3);
     }
+    nav.sidebar ul { list-style: none; padding: 0; margin: 0; }
+    nav.sidebar ul li { margin-bottom: 18px; }
+    nav.sidebar ul li a {
+      color: white; text-decoration: none;
+      font-weight: 500; font-size: 1.05rem;
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: 8px;
+      transition: background 0.3s ease;
+    }
+    nav.sidebar ul li a.active,
+    nav.sidebar ul li a:hover { background: rgba(255,255,255,0.15); }
 
-    .dashboard {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    /* Main Content */
+    main.content {
+      flex-grow: 1;
+      padding: 32px 40px;
+      overflow-y: auto;
+    }
+    h1 { font-weight: 700; font-size: 2.2rem; margin-bottom: 24px; color: #3f51b5; }
+    body.dark h1 { color: #90caf9; }
+
+    /* Summary Cards */
+    .summary-row {
+      display: flex;
+      flex-wrap: wrap;
       gap: 20px;
-      max-width: 1400px;
-      margin: auto;
+      margin-bottom: 40px;
     }
-
     .card {
-      background: #fff;
-      border-radius: 15px;
-      padding: 20px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-      transition: transform 0.2s ease;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      flex: 1 1 220px;
+      padding: 24px 28px;
+      position: relative;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
+    body.dark .card { background: #1e1e1e; box-shadow: 0 4px 14px rgba(255,255,255,0.05); }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.25); }
+    .card.failed { border-left: 6px solid #f44336; }
+    .card h4 { margin: 0 0 14px; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
+    .card .number { font-size: 2.4rem; font-weight: 700; }
 
-    .card:hover {
-      transform: translateY(-5px);
+    /* Tabs */
+    .tabs-nav { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 20px; gap: 20px; }
+    .tab-button {
+      cursor: pointer; padding: 10px 18px; font-weight: 600;
+      border-radius: 6px 6px 0 0; background: #f1f3f6; color: #555; transition: 0.3s;
     }
+    .tab-button.active { background: #3f51b5; color: white; box-shadow: 0 -3px 6px rgba(63,81,181,0.4); }
+    body.dark .tab-button { background: #2a2a2a; color: #ccc; }
+    body.dark .tab-button.active { background: #90caf9; color: #111; }
 
-    canvas {
-      width: 100% !important;
-      height: 100% !important;
+    /* Tab Content */
+    .tab-content {
+      display: none;
+      background: white;
+      padding: 24px;
+      border-radius: 0 0 10px 10px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.1);
     }
+    body.dark .tab-content { background: #1e1e1e; box-shadow: 0 4px 16px rgba(255,255,255,0.05); }
+    .tab-content.active { display: block; }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; font-size: 0.95rem; margin-top: 16px; background: white; border-radius: 8px; overflow: hidden; }
+    body.dark table { background: #1e1e1e; color: #ddd; }
+    thead th { background: #e0e0e0; padding: 12px 16px; font-weight: 600; }
+    body.dark thead th { background: #2a2a2a; }
+    tbody td { padding: 12px 16px; border-bottom: 1px solid #eee; }
+    body.dark tbody td { border-bottom: 1px solid #333; }
+    tbody tr:hover { background: #f5f5f5; }
+    body.dark tbody tr:hover { background: #2a2a2a; }
+    td.failed { color: #f44336; font-weight: 600; }
+    td.good { color: #4caf50; font-weight: 600; }
+
+    /* Footer */
+    footer { margin-top: 40px; text-align: center; font-size: 0.85rem; color: #777; }
+    body.dark footer { color: #999; }
+
+    /* Dark Mode Toggle */
+    .toggle-theme {
+      margin-top: auto; background: rgba(255,255,255,0.1); border: none; color: white;
+      padding: 10px; border-radius: 6px; cursor: pointer; font-size: 0.95rem;
+      display: flex; align-items: center; gap: 8px; transition: 0.3s;
+    }
+    .toggle-theme:hover { background: rgba(255,255,255,0.25); }
+
+    /* Chart Containers */
+    .chart-container { margin-bottom: 40px; }
+    canvas { width: 100% !important; height: 300px !important; }
   </style>
 </head>
 <body>
-  <h1>📊 Load Test Analysis Dashboard</h1>
+  <nav class="sidebar">
+    <ul>
+      <li><a href="#" class="tab-link active" data-tab="overview"><i class="fas fa-home"></i> Overview</a></li>
+      <li><a href="#" class="tab-link" data-tab="metrics"><i class="fas fa-chart-bar"></i> Metrics</a></li>
+      <li><a href="#" class="tab-link" data-tab="charts"><i class="fas fa-chart-line"></i> Charts</a></li>
+      <li><a href="#" class="tab-link" data-tab="checks"><i class="fas fa-clipboard-check"></i> Checks</a></li>
+    </ul>
+    <button class="toggle-theme"><i class="fas fa-moon"></i> Toggle Theme</button>
+  </nav>
 
-  <div class="dashboard">
-    <!-- Line Chart -->
-    <div class="card">
-      <h3>Response Time (ms)</h3>
-      <canvas id="responseTimeChart"></canvas>
-    </div>
+  <main class="content">
+    <h1><i class="fas fa-tachometer-alt"></i> Load Test: <%= title %></h1>
 
-    <!-- Bar Chart -->
-    <div class="card">
-      <h3>Requests Per Second</h3>
-      <canvas id="rpsChart"></canvas>
-    </div>
+    <!-- Overview Section -->
+    <section id="overview" class="tab-content active">
+      <div class="summary-row">
+        <div class="card">
+          <h4><i class="fas fa-globe"></i> Total Requests</h4>
+          <div class="number"><%= data.metrics.http_reqs?.values.count %></div>
+        </div>
+        <div class="card failed">
+          <h4><i class="fas fa-times-circle"></i> Failed Requests</h4>
+          <div class="number"><%= data.metrics.http_req_failed?.values.passes %></div>
+        </div>
+        <div class="card">
+          <h4><i class="fas fa-exclamation-triangle"></i> Breached Thresholds</h4>
+          <div class="number"><%= thresholdFailures %></div>
+        </div>
+        <div class="card">
+          <h4><i class="fas fa-eye"></i> Failed Checks</h4>
+          <div class="number"><%= checkFailures %></div>
+        </div>
+      </div>
+    </section>
 
-    <!-- Doughnut Chart -->
-    <div class="card">
-      <h3>Request Status Distribution</h3>
-      <canvas id="statusChart"></canvas>
-    </div>
-  </div>
+    <!-- Metrics Section -->
+    <section id="metrics" class="tab-content">
+      <h2>Request Metrics</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Metric</th><th>Count</th><th>Rate</th><th>Avg</th>
+            <th>Max</th><th>Median</th><th>Min</th><th>90th %</th><th>95th %</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% for(let metricName of standardMetrics) { if(data.metrics[metricName]) { let metric=data.metrics[metricName] %>
+          <tr>
+            <td><%= metricName %></td>
+            <td><%= metric.values.count || '-' %></td>
+            <td><%= metric.values.rate || '-' %></td>
+            <td><%= metric.values.avg || '-' %></td>
+            <td><%= metric.values.max || '-' %></td>
+            <td><%= metric.values.med || '-' %></td>
+            <td><%= metric.values.min || '-' %></td>
+            <td><%= metric.values['p(90)'] || '-' %></td>
+            <td><%= metric.values['p(95)'] || '-' %></td>
+          </tr>
+          <% } } %>
+        </tbody>
+      </table>
+    </section>
 
+    <!-- Charts Section -->
+    <section id="charts" class="tab-content">
+      <h2>Load Test Charts</h2>
+      <div class="chart-container"><canvas id="responseTimeChart"></canvas></div>
+      <div class="chart-container"><canvas id="throughputChart"></canvas></div>
+      <div class="chart-container"><canvas id="errorRateChart"></canvas></div>
+    </section>
+
+    <!-- Checks Section -->
+    <section id="checks" class="tab-content">
+      <h2>Checks</h2>
+      <table>
+        <thead><tr><th>Check</th><th>Passes</th><th>Fails</th></tr></thead>
+        <tbody>
+          <% for(let check of data.root_group.checks) { %>
+          <tr class="<%= check.fails>0 ? 'failed':'' %>">
+            <td><%= check.name %></td>
+            <td><%= check.passes %></td>
+            <td><%= check.fails %></td>
+          </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </section>
+
+    <footer>K6 Reporter v<%= version %></footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    // Line Chart - Response Time
-    new Chart(document.getElementById("responseTimeChart"), {
-      type: "line",
-      data: {
-        labels: ["1s","2s","3s","4s","5s","6s","7s","8s","9s","10s"],
-        datasets: [{
-          label: "Avg Response Time (ms)",
-          data: [120, 140, 135, 160, 180, 200, 190, 170, 165, 150],
-          borderColor: "#3498db",
-          backgroundColor: "rgba(52, 152, 219, 0.2)",
-          fill: true,
-          tension: 0.4,
-          pointRadius: 5,
-          pointHoverRadius: 7
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { display: true, position: "top" },
-          tooltip: { mode: "index", intersect: false }
-        },
-        interaction: { mode: "nearest", axis: "x", intersect: false },
-        scales: {
-          x: { title: { display: true, text: "Time (s)" } },
-          y: { title: { display: true, text: "Response Time (ms)" } }
-        }
-      }
+    // Tabs
+    document.querySelectorAll('.tab-link').forEach(link=>{
+      link.addEventListener('click', e=>{
+        e.preventDefault();
+        document.querySelectorAll('.tab-link').forEach(l=>l.classList.remove('active'));
+        link.classList.add('active');
+        const tab = link.dataset.tab;
+        document.querySelectorAll('.tab-content').forEach(c=>{
+          c.classList.remove('active');
+          if(c.id === tab) c.classList.add('active');
+        });
+      });
     });
 
-    // Bar Chart - Requests per Second
-    new Chart(document.getElementById("rpsChart"), {
-      type: "bar",
-      data: {
-        labels: ["1s","2s","3s","4s","5s","6s","7s","8s","9s","10s"],
-        datasets: [{
-          label: "RPS",
-          data: [10, 20, 35, 50, 60, 80, 70, 65, 55, 40],
-          backgroundColor: "#2ecc71",
-          borderRadius: 8
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { display: false },
-          tooltip: { mode: "index", intersect: false }
-        },
-        scales: {
-          x: { title: { display: true, text: "Time (s)" } },
-          y: { title: { display: true, text: "Requests per Second" } }
-        }
-      }
+    // Theme toggle
+    document.querySelector('.toggle-theme').addEventListener('click', () => {
+      document.body.classList.toggle('dark');
     });
 
-    // Doughnut Chart - Status Codes
-    new Chart(document.getElementById("statusChart"), {
-      type: "doughnut",
-      data: {
-        labels: ["200 OK", "400 Bad Request", "500 Server Error"],
-        datasets: [{
-          data: [85, 10, 5],
-          backgroundColor: ["#27ae60", "#f1c40f", "#e74c3c"],
-          hoverOffset: 10
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { position: "bottom" },
-          tooltip: { callbacks: {
-            label: function(ctx) {
-              return ctx.label + ": " + ctx.raw + "%";
-            }
-          }}
+    // Example chart data placeholders; replace with actual K6 data
+    const labels = data.metrics.time?.values.timestamps || [];
+    const responseTimes = data.metrics.http_req_duration?.values.avg || [];
+    const throughputs = data.metrics.http_reqs?.values.rate || [];
+    const errorRates = data.metrics.http_req_failed?.values.rate || [];
+
+    // Gradient helper
+    function getGradient(ctx, startColor, endColor) {
+      const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+      gradient.addColorStop(0, startColor);
+      gradient.addColorStop(1, endColor);
+      return gradient;
+    }
+
+    const commonOptions = {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 14 }, padding: 20 } },
+        tooltip: {
+          enabled: true, mode: 'nearest', intersect: false,
+          backgroundColor: 'rgba(63,81,181,0.9)',
+          titleFont: { size: 14, weight: 'bold' },
+          bodyFont: { size: 13 }, padding: 12, cornerRadius: 8,
+          callbacks: { label: context => `${context.dataset.label}: ${context.formattedValue}` }
         }
-      }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 13 }, color: document.body.classList.contains('dark') ? '#ddd' : '#333' } },
+        y: { grid: { color: document.body.classList.contains('dark') ? '#333' : '#eee' }, ticks: { font: { size: 13 }, color: document.body.classList.contains('dark') ? '#ddd' : '#333' }, beginAtZero: true }
+      },
+      animation: { duration: 800, easing: 'easeOutQuart' }
+    };
+
+    // Response Time Chart
+    const ctx1 = document.getElementById('responseTimeChart').getContext('2d');
+    new Chart(ctx1, {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'Response Time (ms)', data: responseTimes, borderColor: '#3f51b5', backgroundColor: getGradient(ctx1, 'rgba(63,81,181,0.4)', 'rgba(63,81,181,0.05)'), fill: true, tension: 0.3, pointRadius: 4, pointHoverRadius: 6 }] },
+      options: commonOptions
+    });
+
+    // Throughput Chart
+    const ctx2 = document.getElementById('throughputChart').getContext('2d');
+    new Chart(ctx2, {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'Requests per Second', data: throughputs, backgroundColor: getGradient(ctx2, '#4caf50', '#a5d6a7'), borderRadius: 6, barPercentage: 0.6 }] },
+      options: commonOptions
+    });
+
+    // Error Rate Chart
+    const ctx3 = document.getElementById('errorRateChart').getContext('2d');
+    new Chart(ctx3, {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'Error Rate (%)', data: errorRates, borderColor: '#f44336', backgroundColor: getGradient(ctx3, 'rgba(244,67,54,0.4)', 'rgba(244,67,54,0.05)'), fill: true, tension: 0.3, pointRadius: 4, pointHoverRadius: 6 }] },
+      options: commonOptions
     });
   </script>
 </body>
