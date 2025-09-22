@@ -62,6 +62,9 @@
       background: white;
       border-radius: 0 24px 24px 0;
       box-shadow: 0 4px 20px rgba(60,64,67,0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 48px;
     }
     h1 {
       font-weight: 700;
@@ -78,7 +81,7 @@
       display: flex;
       flex-wrap: wrap;
       gap: 28px;
-      margin-bottom: 48px;
+      margin-bottom: 32px;
     }
     .card {
       background: white;
@@ -162,6 +165,7 @@
       box-shadow: 0 6px 16px rgba(60,64,67,0.15);
       color: #3c4043;
       min-height: 450px;
+      width: 100%;
     }
     .tab-content.active {
       display: block;
@@ -203,6 +207,13 @@
     td.good {
       color: #188038;
       font-weight: 600;
+    }
+    /* Chart container */
+    .chart-container {
+      position: relative;
+      height: 360px;
+      margin-bottom: 50px;
+      width: 100%;
     }
     /* Footer */
     footer {
@@ -251,17 +262,6 @@
         flex-wrap: wrap;
         gap: 12px;
       }
-      .tab-button {
-        padding: 12px 18px;
-        font-size: 1rem;
-        border-radius: 6px;
-      }
-    }
-    /* Chart container */
-    .chart-container {
-      position: relative;
-      height: 300px;
-      margin-bottom: 50px;
     }
   </style>
 </head>
@@ -278,7 +278,6 @@
   <main class="content" role="main" tabindex="-1">
     <h1><i class="fas fa-tachometer-alt"></i> Load Test: <%= title %></h1>
 
-    <!-- Overview Section -->
     <section id="overview" class="tab-content active" aria-label="Overview">
       <div class="summary-row">
         <div class="card" role="region" aria-labelledby="total-requests-title" tabindex="0">
@@ -305,7 +304,6 @@
       </div>
     </section>
 
-    <!-- Metrics Section -->
     <section id="metrics" class="tab-content" aria-label="Metrics table">
       <h2>Request Metrics</h2>
       <table role="table" aria-describedby="metrics-desc" aria-sort="none">
@@ -353,10 +351,8 @@
       </table>
     </section>
 
-    <!-- Charts Section -->
-    <section id="charts" class="tab-content" aria-label="Load Test Charts">
+    <section id="charts" class="tab-content" aria-label="Load Test Charts" style="width: 100%;">
       <h2>Load Test Charts</h2>
-      
       <div class="chart-container" aria-label="Response Time Over Time chart">
         <canvas id="responseTimeChart" role="img" aria-describedby="responseTimeDesc"></canvas>
         <p id="responseTimeDesc" class="sr-only">Line chart representing response time in milliseconds over time</p>
@@ -373,8 +369,7 @@
       </div>
     </section>
 
-    <!-- Checks Section -->
-    <section id="checks" class="tab-content" aria-label="Checks and Groups">
+    <section id="checks" class="tab-content" aria-label="Checks and Groups" style="width: 100%;">
       <h2>Checks & Groups</h2>
       <% for(let group of data.root_group.groups) { %>
         <h3>Group: <%= group.name %></h3>
@@ -422,11 +417,11 @@
     </section>
 
     <footer>
-      K6 Reporter v<%= version %> &nbsp;|&nbsp; Powered by <strong>Ben Coleman</strong>
+      K6 Reportes | Powered by <strong>Yellow.ai QA</strong>
     </footer>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
   <script>
     // Tab navigation functionality
     document.querySelectorAll('.tab-link').forEach(link => {
@@ -465,8 +460,8 @@
         values: [successes, failures]
       };
     }
-    
-    // Charts initialization
+
+    // Initialize charts with real data
     (() => {
       const ctx = document.getElementById('responseTimeChart').getContext('2d');
       const { labels, values } = getResponseTimeData(<%- JSON.stringify(data) %>);
@@ -480,16 +475,16 @@
             borderColor: '#1a73e8',
             backgroundColor: 'rgba(26, 115, 232, 0.2)',
             fill: true,
-            tension: 0.3,
+            tension: 0.4,
             pointRadius: 0
           }]
         },
         options: {
           responsive: true,
-          interaction: {mode: 'index', intersect: false},
+          interaction: { mode: 'index', intersect: false },
           plugins: { legend: { display: true } },
           scales: {
-            x: { title: { display: true, text: 'Time' } },
+            x: { title: { display: true, text: 'Time' }, ticks: { maxRotation: 45, minRotation: 45 } },
             y: { title: { display: true, text: 'Milliseconds' }, beginAtZero: true }
           }
         }
@@ -514,8 +509,8 @@
           responsive: true,
           plugins: { legend: { display: true } },
           scales: {
-            x: { title: { display: true, text: 'Time' } },
-            y: { title: { display: true, text: 'Requests/s' }, beginAtZero: true }
+            x: { title: { display: true, text: 'Time' }, ticks: { maxRotation: 45, minRotation: 45 } },
+            y: { title: { display: true, text: 'Requests / s' }, beginAtZero: true }
           }
         }
       });
