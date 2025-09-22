@@ -127,7 +127,7 @@
       });
     });
 
-    // Example chart data (replace with your K6 metrics)
+    // Sample chart data
     const labels = Array.from({length: 20}, (_, i) => `T${i+1}`);
     const responseTimes = labels.map(() => Math.floor(Math.random()*500));
     const throughputs = labels.map(() => Math.floor(Math.random()*200));
@@ -137,7 +137,16 @@
       return new Chart(ctx, {
         type: type,
         data: { labels, datasets: [{ label, data, borderColor: color, backgroundColor: color+'33', fill: true, tension: 0.3 }] },
-        options: { responsive: true, plugins: { legend: { display: true } } }
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: true, labels: { color: '#333', font: { size: 14 } } }
+          },
+          scales: {
+            x: { ticks: { color: '#555' }, grid: { color: '#eee' } },
+            y: { ticks: { color: '#555' }, grid: { color: '#eee' } }
+          }
+        }
       });
     }
 
